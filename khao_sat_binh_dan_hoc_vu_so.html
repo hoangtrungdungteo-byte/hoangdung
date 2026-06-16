@@ -638,6 +638,12 @@
           Đơn vị công tác
           <input id="workUnit" type="text" autocomplete="organization" placeholder="Nhập đơn vị công tác">
         </label>
+        <label>
+  Số điện thoại
+  <input id="phoneNumber"
+         type="text"
+         placeholder="Nhập số điện thoại">
+</label>
       </div>
       <div class="status-line" id="entryError"></div>
       <div class="actions">
@@ -1056,11 +1062,12 @@
     function prepareWheel() {
       const name = document.getElementById("fullName").value.trim();
       const unit = document.getElementById("workUnit").value.trim();
-
-      if (!name || !unit) {
-        entryError.textContent = "Vui lòng nhập đầy đủ họ và tên, đơn vị công tác.";
-        return;
-      }
+      const phone = document.getElementById("phoneNumber").value.trim();
+      if (!name || !unit || !phone) {
+      entryError.textContent =
+    "Vui lòng nhập đầy đủ họ tên, đơn vị công tác và số điện thoại.";
+  return;
+}
 
       state.student = { name, unit };
       state.selectedSet = null;
@@ -1177,7 +1184,7 @@
           score += 1;
         }
       });
-
+saveResultToSheet(score, isTimeout);
       renderCertificate(score, isTimeout);
       showPanel(resultPanel);
       celebrate("Chúc mừng hoàn thành bài khảo sát!");
@@ -1209,7 +1216,7 @@
       document.getElementById("certDate").textContent = formatDakPxiDate(new Date());
     }
 
-    function resetToEntry() {
+    function resetToEntry() { document.getElementById("phoneNumber").value = "";
       clearInterval(state.timerId);
       state.remainingSeconds = 480;
       renderTime();
@@ -1517,6 +1524,51 @@
         .replaceAll('"', "&quot;")
         .replaceAll("'", "&#039;");
     }
+ async function saveResultToSheet(score, isTimeout) {
+
+  const phone =
+    document.getElementById("phoneNumber")?.value || "";
+
+  const usedSeconds =
+    Math.min(
+      480,
+      Math.max(
+        0,
+        Math.round(
+          (Date.now() - state.startedAt) / 1000
+        )
+      )
+    );
+
+  const payload = {
+    hoten: state.student.name,
+    donvi: state.student.unit,
+    bode: state.selectedSet || "",
+    diem: score,
+    thoigian: `${usedSeconds} giây`,
+    sodienthoai: phone,
+    thietbi: navigator.userAgent
+  };
+
+  try {
+
+    await fetch(
+      "https://script.google.com/macros/s/AKfycbxdESzvSfoqssp7geu6lNsaCZLczpFgFf0Vz_vSV3pbmVO__tbQPb5lLiMEM1RFvIdR/exec",
+      {
+        method: "POST",
+        mode: "no-cors",
+        headers: {
+          "Content-Type":
+            "application/json"
+        },
+        body: JSON.stringify(payload)
+      }
+    );
+
+  } catch(err) {
+    console.log(err);
+  }
+}
   </script>
 </body>
 </html>
